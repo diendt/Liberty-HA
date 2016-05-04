@@ -11,13 +11,13 @@ sleep 3
 
 echocolor "Install NTP on $CON_MGNT_IP2"
 sleep 3
-scp ./03-ntp.sh root@$CON_MGNT_IP2:/root/install/install/03-ntp.sh
-ssh root@$CON_MGNT_IP2 './03-ntp.sh'
+scp ./03-ntp.sh root@$CON_MGNT_IP2:/root/script/03-ntp.sh
+ssh root@$CON_MGNT_IP2 './script/03-ntp.sh'
 
 echocolor "Install NTP on $CON_MGNT_IP3"
 sleep 3
-scp ./03-ntp.sh root@$CON_MGNT_IP3:/root/install/install/03-ntp.sh
-ssh root@$CON_MGNT_IP3 './03-ntp.sh'
+scp ./03-ntp.sh root@$CON_MGNT_IP3:/root/script/03-ntp.sh
+ssh root@$CON_MGNT_IP3 './script/03-ntp.sh'
 
 ##############################################
 
@@ -40,12 +40,13 @@ echocolor "Install Galera MariaDB on node $CON_MGNT_IP2"
 
 sleep 3
 
-scp -r ./04-mariadb.sh root@$CON_MGNT_IP2:/root/install/04-mariadb.sh
+scp -r ./04-mariadb.sh root@$CON_MGNT_IP2:/root/script/04-mariadb.sh
 
 ssh root@$CON_MGNT_IP2  << EOF
+	cd script
 	source config.cfg
 	source function.sh
-	/root/install/04-mariadb.sh $CON_MGNT_IP2
+	/root/script/04-mariadb.sh $CON_MGNT_IP2
 EOF
 
 scp /etc/mysql/debian.cnf root@$CON_MGNT_IP2:/etc/mysql/
@@ -57,12 +58,13 @@ sleep 3
 echocolor "Install Galera MariaDB on node $CON_MGNT_IP3"
 sleep 3
 
-scp -r ./04-mariadb.sh root@$CON_MGNT_IP3:/root/install/04-mariadb.sh
+scp -r ./04-mariadb.sh root@$CON_MGNT_IP3:/root/script/04-mariadb.sh
 
 ssh root@$CON_MGNT_IP3  << EOF
+    cd script
 	source config.cfg
 	source function.sh
-	/root/install/04-mariadb.sh $CON_MGNT_IP3
+	/root/script/04-mariadb.sh $CON_MGNT_IP3
 EOF
 
 scp /etc/mysql/debian.cnf root@$CON_MGNT_IP3:/etc/mysql/
@@ -101,7 +103,7 @@ service xinetd restart
 #Install on Node2
 
 ssh root@$CON_MGNT_IP2 'apt-get install xinetd -y'
-scp /root/install/mysqlchk root@$CON_MGNT_IP2:/etc/xinetd.d/
+scp /root/script/mysqlchk root@$CON_MGNT_IP2:/etc/xinetd.d/
 
 cat << EOF | ssh root@$CON_MGNT_IP2
 
@@ -113,7 +115,7 @@ sleep 2
 
 #Install On Node3
 ssh root@$CON_MGNT_IP3 'apt-get install xinetd -y'
-scp /root/install/mysqlchk root@$CON_MGNT_IP3:/etc/xinetd.d/
+scp /root/script/mysqlchk root@$CON_MGNT_IP3:/etc/xinetd.d/
 
 ssh root@$CON_MGNT_IP3 << EOF
 
@@ -144,6 +146,7 @@ sleep 2
 #Connect ssh to Node 2
 
 cat << EOF | ssh root@$CON_MGNT_IP2
+cd script
 source config.cfg
 
 apt-get install rabbitmq-server -y  --fix-missing 
@@ -157,6 +160,8 @@ EOF
 #Connect ssh to Node 3
 
 cat << EOF | ssh root@$CON_MGNT_IP3
+
+cd script
 source config.cfg
 
 apt-get install rabbitmq-server -y  --fix-missing 
@@ -176,6 +181,7 @@ service rabbitmq-server start
 
 #Join node 2, node 3 to cluster
 cat << EOF | ssh root@$CON_MGNT_IP2
+cd script
 source config.cfg
 
 service rabbitmq-server start
@@ -189,6 +195,7 @@ EOF
 
 
 cat << EOF | ssh root@$CON_MGNT_IP3
+cd script
 source config.cfg
 
 service rabbitmq-server start
@@ -224,12 +231,14 @@ echocolor "INSTALL HARPROXY &KEEPALIVED PACKAGE ON $CON_MGNT_IP2"
 
 sleep 5
 
-./06-haproxy-other.sh $CON_MGNT_IP2
+cd script
+./05-haproxy-other.sh $CON_MGNT_IP2
 
 #Node3
 echocolor "INSTALL HARPROXY &KEEPALIVED PACKAGE ON $CON_MGNT_IP3" 
 sleep 5
 
-./06-haproxy-other.sh $CON_MGNT_IP3
+cd script
+./05-haproxy-other.sh $CON_MGNT_IP3
 
 echocolor "END OF PREPARE"

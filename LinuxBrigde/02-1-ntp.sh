@@ -1,7 +1,7 @@
 #!/bin/bash -ex
 
-source /root/script/config.cfg
-source /root/script/function.sh
+source config.cfg
+source function.sh
 
 echocolor "Install Openstack components"
 

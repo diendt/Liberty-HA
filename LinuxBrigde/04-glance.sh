@@ -1,8 +1,8 @@
 #!/bin/bash -ex
 #
 
-source config.cfg
-source function.sh
+source /root/ha-lb/config.cfg
+source /root/ha-lb/function.sh
 source /root/admin-openrc.sh
 
 echo "Create the database for GLANCE"
@@ -14,8 +14,9 @@ FLUSH PRIVILEGES;
 EOF
 
 
-sleep 5
+sleep 2
 echo " Create user, endpoint for GLANCE"
+sleep 3
 
 openstack user create --password $ADMIN_PASS glance
 openstack role add --project service --user glance admin
@@ -31,37 +32,45 @@ image
 
 #Install Glance On Node 1
 
-./10-add-glance.sh $VIP $CON_MGNT_IP1
-
-
+echocolor "Install Glance On $CON_MGNT_IP1"
 sleep 3
+./04-1-add-glance.sh $VIP $CON_MGNT_IP1
+
+sleep 2
 
 #Install Glance On Node 2
-scp -r ./10-add-glance.sh root@$CON_MGNT_IP2:/root/install/10-add-glance.sh
+echocolor "Install Glance On $CON_MGNT_IP2"
+sleep 3
 
-ssh root@$CON_MGNT_IP2  << EOF
+scp -r ./04-1-add-glance.sh root@$CON_MGNT_IP2:/root/ha-lb/04-1-add-glance.sh
+
+ssh root@$CON_MGNT_IP2  bash -ex << EOF
+	cd ha-lb
 	source config.cfg
 	source function.sh
-	/root/install/10-add-glance.sh $VIP $CON_MGNT_IP2
+	/root/ha-lb/04-1-add-glance.sh $VIP $CON_MGNT_IP2
 EOF
 
-sleep 3
 
 #Install Glance On Node 3
-scp -r ./10-add-glance.sh root@$CON_MGNT_IP3:/root/install/10-add-glance.sh
+echocolor "Install Glance On $CON_MGNT_IP3"
+sleep 3
 
-ssh root@$CON_MGNT_IP3  << EOF
+scp -r ./04-1-add-glance.sh root@$CON_MGNT_IP3:/root/ha-lb/04-1-add-glance.sh
+
+ssh root@$CON_MGNT_IP3  bash -ex << EOF
+    cd ha-lb
 	source config.cfg
 	source function.sh
-	/root/install/10-add-glance.sh $VIP $CON_MGNT_IP3
+	/root/ha-lb/04-1-add-glance.sh $VIP $CON_MGNT_IP3
 EOF
 
 
-sleep 3
+sleep 2
 echo "########## Registering Cirros IMAGE for GLANCE ... ##########"
+sleep 3
 
 test -d ./images && cd images/ || mkdir images
-
 
 wget http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img
 
@@ -69,6 +78,7 @@ glance image-create --name "cirros" \
 --file cirros-0.3.4-x86_64-disk.img \
 --disk-format qcow2 --container-format bare \
 --visibility public --progress
+
 cd /root/
 # rm -r /tmp/images
 
