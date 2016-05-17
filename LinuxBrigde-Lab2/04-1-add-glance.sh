@@ -1,7 +1,7 @@
 #!/bin/bash -ex
 #
-source /root/ha-lb/config.cfg
-source /root/ha-lb/function.sh
+source /root/script/config.cfg
+source /root/script/function.sh
 source /root/admin-openrc.sh
 
 echocolor "INSTALL GLANCE - $2"
@@ -24,8 +24,8 @@ test -f $glanceapi_ctl.orig || cp $glanceapi_ctl $glanceapi_ctl.orig
 #Section [DEFAULT]
 ops_edit $glanceapi_ctl DEFAULT verbose True
 ops_edit $glanceapi_ctl DEFAULT notification_driver noop
-#ops_edit $glanceapi_ctl DEFAULT registry_host $2
-#ops_edit $glanceapi_ctl DEFAULT bind_host $2
+ops_edit $glanceapi_ctl DEFAULT registry_host $2
+ops_edit $glanceapi_ctl DEFAULT bind_host $2
 
 #Section [database]
 ops_edit $glanceapi_ctl database \
@@ -56,8 +56,8 @@ ops_edit $glanceapi_ctl paste_deploy flavor keystone
 #ops_edit $glanceapi_ctl glance_store \
 #filesystem_store_datadir /var/lib/glance/images/
 
-sleep 5
 echocolor "Configuring GLANCE REGISTER"
+sleep 5
 #/* Backup file file glance-registry.conf
 glancereg_ctl=/etc/glance/glance-registry.conf
 test -f $glancereg_ctl.orig || cp $glancereg_ctl $glancereg_ctl.orig
@@ -90,7 +90,7 @@ ops_edit $glancereg_ctl paste_deploy flavor keystone
 #Section [DEFAULT]
 ops_edit $glancereg_ctl DEFAULT  notification_driver noop
 ops_edit $glancereg_ctl DEFAULT  verbose True
-#ops_edit $glancereg_ctl DEFAULT bind_host  $2
+ops_edit $glancereg_ctl DEFAULT bind_host  $2
 
 sleep 2
 

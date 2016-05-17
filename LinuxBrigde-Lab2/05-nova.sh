@@ -28,28 +28,38 @@ openstack endpoint create \
 --region RegionOne \
 compute
 
-./12-add-nova.sh $VIP $CON_MGNT_IP1
+#Install Nova On Node 1
+echocolor "Install Nova On $CON_MGNT_IP1"
+sleep 3
+
+./05-1-add-nova.sh $VIP $CON_MGNT_IP1
 
 sleep 3
 
 #Install Nova On Node 2
-scp -r ./12-add-nova.sh root@$CON_MGNT_IP2:/root/install/12-add-nova.sh
-
-ssh root@$CON_MGNT_IP2  << EOF
-	source config.cfg
-	source function.sh
-	/root/install/12-add-nova.sh $VIP $CON_MGNT_IP2
-EOF
-
+echocolor "Install Nova On $CON_MGNT_IP2"
 sleep 3
 
-#Install Nova On Node 3
-scp -r ./12-add-nova.sh root@$CON_MGNT_IP3:/root/install/12-add-nova.sh
+scp -r ./05-1-add-nova.sh root@$CON_MGNT_IP2:/root/script/05-1-add-nova.sh
 
-ssh root@$CON_MGNT_IP3  << EOF
+ssh root@$CON_MGNT_IP2  bash -ex << EOF
+    cd script
 	source config.cfg
 	source function.sh
-	/root/install/12-add-nova.sh $VIP $CON_MGNT_IP3
+	/root/script/05-1-add-nova.sh $VIP $CON_MGNT_IP2
+EOF
+
+#Install Nova On Node 3
+echocolor "Install Nova On $CON_MGNT_IP3"
+sleep 3
+
+scp -r ./05-1-add-nova.sh root@$CON_MGNT_IP3:/root/script/05-1-add-nova.sh
+
+ssh root@$CON_MGNT_IP3  bash -ex << EOF
+    cd script
+	source config.cfg
+	source function.sh
+	/root/script/05-1-add-nova.sh $VIP $CON_MGNT_IP3
 EOF
 
 echocolor "Testing NOVA service"

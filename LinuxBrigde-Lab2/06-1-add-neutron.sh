@@ -30,18 +30,27 @@ ops_edit $neutron_ctl DEFAULT allow_overlapping_ips True
 ops_edit $neutron_ctl DEFAULT rpc_backend rabbit
 ops_edit $neutron_ctl DEFAULT notify_nova_on_port_status_changes True
 ops_edit $neutron_ctl DEFAULT notify_nova_on_port_data_changes True
-ops_edit $neutron_ctl DEFAULT bind_host $2
-ops_edit $neutron_ctl DEFAULT nova_url http://$2:8774/v2
+#ops_edit $neutron_ctl DEFAULT bind_host $2
+ops_edit $neutron_ctl DEFAULT nova_url http://$1:8774/v2
 
+#Config for HA l3 agent
+## [DEFAULT] section
+ops_edit $neutron_ctl DEFAULT dhcp_agents_per_network 2
+ops_edit $neutron_ctl DEFAULT l3_ha True
+ops_edit $neutron_ctl DEFAULT allow_automatic_l3agent_failover True
+ops_edit $neutron_ctl DEFAULT max_l3_agents_per_router 3
+ops_edit $neutron_ctl DEFAULT min_l3_agents_per_router 2
+ops_edit $neutron_ctl DEFAULT dhcp_agents_per_network  3
+ops_edit $neutron_ctl DEFAULT l3_ha_net_cidr  169.254.192.0/18
 
 ## [database] section
 ops_edit $neutron_ctl database \
-connection mysql+pymysql://neutron:$NEUTRON_DBPASS@$2/neutron
+connection mysql+pymysql://neutron:$NEUTRON_DBPASS@$1/neutron
 
 
 ## [keystone_authtoken] section
-ops_edit $neutron_ctl keystone_authtoken auth_uri http://$2:5000
-ops_edit $neutron_ctl keystone_authtoken auth_url http://$2:35357
+ops_edit $neutron_ctl keystone_authtoken auth_uri http://$1:5000
+ops_edit $neutron_ctl keystone_authtoken auth_url http://$1:35357
 ops_edit $neutron_ctl keystone_authtoken auth_plugin password
 ops_edit $neutron_ctl keystone_authtoken project_domain_id default
 ops_edit $neutron_ctl keystone_authtoken user_domain_id default
@@ -69,7 +78,7 @@ ops_edit $neutron_ctl oslo_messaging_rabbit heartbeat_timeout_threshold   60
 ops_edit $neutron_ctl oslo_messaging_rabbit heartbeat_rate   2
 
 ## [nova] section
-ops_edit $neutron_ctl nova auth_url http://$2:35357
+ops_edit $neutron_ctl nova auth_url http://$1:35357
 ops_edit $neutron_ctl nova auth_plugin password
 ops_edit $neutron_ctl nova project_domain_id default
 ops_edit $neutron_ctl nova user_domain_id default
@@ -86,21 +95,21 @@ ml2_clt=/etc/neutron/plugins/ml2/ml2_conf.ini
 test -f $ml2_clt.orig || cp $ml2_clt $ml2_clt.orig
 
 ## [ml2] section
-ops_edit $ml2_clt ml2 tenant_network_types = vxlan
-ops_edit $ml2_clt ml2 type_drivers = flat,vlan,vxlan
-ops_edit $ml2_clt ml2 mechanism_drivers = linuxbridge,l2population
-ops_edit $ml2_clt ml2 extension_drivers = port_security
+ops_edit $ml2_clt ml2 tenant_network_types  vxlan
+ops_edit $ml2_clt ml2 type_drivers  flat,vlan,vxlan
+ops_edit $ml2_clt ml2 mechanism_drivers  linuxbridge,l2population
+ops_edit $ml2_clt ml2 extension_drivers  port_security
 
 
 ## [ml2_type_flat] section
-ops_edit $ml2_clt ml2_type_flat = external
+ops_edit $ml2_clt ml2_type_flat flat_networks external
 
 ## [ml2_type_vxlan] section
-ops_edit $ml2_clt ml2_type_vxlan vni_ranges = 1:1000
+ops_edit $ml2_clt ml2_type_vxlan vni_ranges 1:1000
 
 
 ## [securitygroup] section
-ops_edit $ml2_clt securitygroup enable_ipset = True
+ops_edit $ml2_clt securitygroup enable_ipset  True
 
 #############################################
 
@@ -114,19 +123,19 @@ test -f $linuxbridge_ctl.orig || cp $linuxbridge_ctl $linuxbridge_ctl.orig
 #touch $linuxbridgefile
 
 ##[linux_bridge] section
-ops_edit $linuxbridge_ctl linux_bridge physical_interface_mappings = external:eth1
+ops_edit $linuxbridge_ctl linux_bridge physical_interface_mappings  external:eth1
 
 ## [vxlan] section
-ops_edit $linuxbridge_ctl vxlan enable_vxlan = True
-ops_edit $linuxbridge_ctl vxlan local_ip = $CON_MGNT_IP
-ops_edit $linuxbridge_ctl vxlan l2_population = True
+ops_edit $linuxbridge_ctl vxlan enable_vxlan  True
+ops_edit $linuxbridge_ctl vxlan local_ip  $2
+ops_edit $linuxbridge_ctl vxlan l2_population  True
 
 ## [agent] section
-ops_edit $linuxbridge_ctl agent prevent_arp_spoofing = True
+ops_edit $linuxbridge_ctl agent prevent_arp_spoofing  True
 
 ## [securitygroup] section
-ops_edit $linuxbridge_ctl securitygroup enable_security_group = True
-ops_edit $linuxbridge_ctl securitygroup  firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+ops_edit $linuxbridge_ctl securitygroup enable_security_group  True
+ops_edit $linuxbridge_ctl securitygroup  firewall_driver  neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
 
 #############################################
 
@@ -140,6 +149,12 @@ test -f $netl3agent.orig || cp $netl3agent $netl3agent.orig
 ops_edit $netl3agent DEFAULT verbose True
 ops_edit $netl3agent DEFAULT interface_driver neutron.agent.linux.interface.BridgeInterfaceDriver
 ops_edit $netl3agent DEFAULT external_network_bridge 
+
+#Config for HA-L3-Agent
+ops_edit $netl3agent DEFAULT ha_confs_path '$state_path/ha_confs'
+ops_edit $netl3agent DEFAULT ha_vrrp_auth_type PASS
+ops_edit $netl3agent DEFAULT ha_vrrp_auth_password $PASS_VRRP
+ops_edit $netl3agent DEFAULT ha_vrrp_advert_int 2
 
 ## [AGENT] section
 ops_edit $netl3agent AGENT
@@ -160,7 +175,7 @@ ops_edit $netdhcp DEFAULT dnsmasq_config_file /etc/neutron/dnsmasq-neutron.conf
 
 echocolor "Fix loi MTU"
 sleep 3
-echo "dhcp-option-force=26,1454" > /etc/neutron/dnsmasq-neutron.conf
+echo "dhcp-option-force = 26,1454" > /etc/neutron/dnsmasq-neutron.conf
 
 #killall dnsmasq
 
@@ -171,8 +186,8 @@ netmetadata=/etc/neutron/metadata_agent.ini
 test -f $netmetadata.orig || cp $netmetadata $netmetadata.orig
 
 ## [DEFAULT] 
-ops_edit $netmetadata DEFAULT auth_uri http://$2:5000
-ops_edit $netmetadata DEFAULT auth_url http://$2:35357
+ops_edit $netmetadata DEFAULT auth_uri http://$1:5000
+ops_edit $netmetadata DEFAULT auth_url http://$1:35357
 ops_edit $netmetadata DEFAULT auth_region regionOne
 ops_edit $netmetadata DEFAULT auth_plugin password
 ops_edit $netmetadata DEFAULT project_domain_id default
@@ -180,7 +195,7 @@ ops_edit $netmetadata DEFAULT user_domain_id default
 ops_edit $netmetadata DEFAULT project_name service
 ops_edit $netmetadata DEFAULT username neutron
 ops_edit $netmetadata DEFAULT password $NEUTRON_PASS
-ops_edit $netmetadata DEFAULT nova_metadata_ip $1
+ops_edit $netmetadata DEFAULT nova_metadata_ip $2
 ops_edit $netmetadata DEFAULT metadata_proxy_shared_secret $METADATA_SECRET
 ops_edit $netmetadata DEFAULT verbose True
 
@@ -195,17 +210,21 @@ su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf \
   
 echocolor "Restarting NOVA service"
 sleep 3 
-service nova-api restart
-service nova-scheduler restart
-service nova-conductor restart
+for i in `ls /etc/init.d/ | grep nova`; do service $i restart; done
+
+#service nova-api restart
+#service nova-scheduler restart
+#service nova-conductor restart
 
 echocolor "Restarting NEUTRON service"
 sleep 3
-service neutron-server restart
-service neutron-plugin-openvswitch-agent restart
-service neutron-dhcp-agent restart
-service neutron-metadata-agent restart
-service neutron-l3-agent restart
+for i in `ls /etc/init.d/ | grep neutron`; do service $i restart; done
+
+#service neutron-server restart
+#service neutron-plugin-set  -agent restart
+#service neutron-dhcp-agent restart
+#service neutron-metadata-agent restart
+#service neutron-l3-agent restart
 
 rm -f /var/lib/neutron/neutron.sqlite
 
@@ -234,7 +253,7 @@ iface eth1:0 inet static
 address $EXT_IP
 netmask $NETMASK_ADD_EXT
 gateway $GATEWAY_IP_EXT
-dns-nameservers 8.8.8.8
+dns-nameservers  $DNS_SERVER
 
 
 auto eth1
@@ -251,12 +270,6 @@ netmask $NETMASK_ADD_MGNT
 EOF
 
 ifdown -a && ifup -a
-
-echo "#### Reboot ####":
-reboot
-
-#echo "##### Reboot SERVER #####"
-#init 6
 
 #neutron agent-list
 #neutron ext-list

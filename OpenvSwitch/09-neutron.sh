@@ -30,28 +30,34 @@ openstack endpoint create \
 # SERVICE_TENANT_ID=`keystone tenant-get service | awk '$2~/^id/{print $4}'`
 
 
-./14-add-neutron.sh $VIP $CON_MGNT_IP1
+./09-neutron-add.sh $VIP $CON_MGNT_IP1
 
 sleep 3
 
 #Install Neutron On Node 2
-scp -r ./14-add-neutron.sh root@$CON_MGNT_IP2:/root/install/14-add-neutron.sh
+scp -r ./09-neutron-add.sh root@$CON_MGNT_IP2:/root/script/09-neutron-add.sh
 
 ssh root@$CON_MGNT_IP2  << EOF
+	cd script
 	source config.cfg
 	source function.sh
-	/root/install/14-add-neutron.sh $VIP $CON_MGNT_IP2
+	/root/script/09-neutron-add.sh $VIP $CON_MGNT_IP2
+	reboot
 EOF
 
 sleep 3
 
 #Install Neutron On Node 3
-scp -r ./14-add-neutron.sh root@$CON_MGNT_IP3:/root/install/14-add-neutron.sh
+scp -r ./09-neutron-add.sh root@$CON_MGNT_IP3:/root/script/09-neutron-add.sh
 
 ssh root@$CON_MGNT_IP3  << EOF
+	cd script
 	source config.cfg
 	source function.sh
-	/root/install/14-add-neutron.sh $VIP $CON_MGNT_IP3
+	/root/script/09-neutron-add.sh $VIP $CON_MGNT_IP3
+	reboot
 EOF
+
+reboot
 
 

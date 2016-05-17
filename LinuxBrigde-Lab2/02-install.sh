@@ -242,3 +242,16 @@ cd script
 ./03-haproxy-other.sh $CON_MGNT_IP3
 
 echocolor "END OF PREPARE"
+
+./03-keystone.sh
+
+./04-glance.sh
+
+./05-nova.sh
+
+./06-neutron.sh
+
+./07-cinder.sh
+
+./10-ctl-horizon.sh
+

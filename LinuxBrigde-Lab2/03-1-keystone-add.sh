@@ -3,6 +3,14 @@
 source config.cfg
 source function.sh
 
+#echo "Create Database for Keystone"
+
+cat << EOF | mysql -uroot -p$MYSQL_PASS
+CREATE DATABASE keystone;
+GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$KEYSTONE_DBPASS';
+GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$KEYSTONE_DBPASS';
+FLUSH PRIVILEGES;
+EOF
 
 echocolor "Install Openstack components on $2"
 
@@ -32,11 +40,9 @@ ops_edit $filekeystone DEFAULT admin_bind_host $2
 ops_edit $filekeystone database \
 connection mysql+pymysql://keystone:$KEYSTONE_DBPASS@$1/keystone
 
-ops_edit $filekeystone catalog driver keystone.catalog.backends.sql.Catalog
-
 ops_edit $filekeystone identity driver keystone.identity.backends.sql.Identity
-
-ops_edit $filekeystone memcache servers $2:11211
+ops_edit $filekeystone catalog driver keystone.catalog.backends.sql.Catalog
+ops_edit $filekeystone identity memcache servers localhost:11211
 
 ops_edit $filekeystone token provider uuid
 ops_edit $filekeystone token driver memcache
@@ -134,7 +140,7 @@ EOF
 
 
  
-ln -s /etc/apache2/sites-available/wsgi-keystone.conf /etc/apache2/sites-enabled
+ln -sf /etc/apache2/sites-available/wsgi-keystone.conf /etc/apache2/sites-enabled
 
 service apache2 restart
 
